@@ -44,6 +44,9 @@ class Firebase {
 
     doPasswordUpdate = p =>
         this.auth.currentUser.updatePassword(p);
+
+    doSendEmailVerification = () =>
+        this.auth.currentUser.sendEmailVerification()
     // * * * END AUTH API * * * //
 
     // * * * START MERGE AUTH AND DB USER API * * * //
@@ -64,6 +67,8 @@ class Firebase {
                     authUser = {
                         uid: authUser.uid,
                         email: authUser.email,
+                        emailVerified: authUser.emailVerified,
+                        providerData: authUser.providerData,
                         ...dbUser
                     };
 
