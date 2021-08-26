@@ -1,6 +1,81 @@
-import React from 'react-router-dom';
+import React, { Component } from 'react';
+import { compose } from 'recompose';
 
-const Admin = () => (
-    <h1>Admin</h1>
-);
-export default Admin;
+import { withFirebase } from '../Firebase';
+import { withAuthorization } from '../Session';
+import * as ROLES from '../../constants/roles';
+
+class AdminPage extends Component {
+    constructor(props){
+        super(props);
+
+        this.state = {
+            loading: false,
+            users: []
+        };
+    }
+
+    componentDidMount(){
+        this.setState({ loading: true });
+
+        this.props.firebase.users().on('value', snapshot => {
+            const userObject = snapshot.val();
+
+            const userList = Object.keys(userObject).map(key => ({
+                ...userObject[key],
+                uid: key
+            }));
+            this.setState({
+                users: userList,
+                loading: false
+            });
+        });
+    }
+
+    componentWillUnmount() {
+        this.props.firebase.users().off();
+    }
+
+    render() {
+        const { users, loading } = this.state;
+
+        return (
+            <div>
+                <h1>Admin</h1>
+                <p>The Admin Page is accessible by every signed in admin user.</p>
+
+                {loading && <div>Loading ...</div>}
+
+                <UserList users={users} />
+            </div>
+        )
+    }
+}
+
+const UserList = ({ users }) => (
+    <ul>
+        {users.map(user => (
+            <li key={user.id}>
+                <span>
+                    <strong>ID:</strong> {user.uid}
+                </span>
+                 | 
+                <span>
+                    <strong>E-mail:</strong> {user.email}
+                </span>
+                 | 
+                <span>
+                    <strong>Username:</strong> {user.username}
+                </span>
+            </li>
+        ))}
+    </ul>
+)
+
+const condition = authUser => 
+    authUser && !!authUser.roles[ROLES.ADMIN];
+
+export default compose(
+    withAuthorization(condition),
+    withFirebase
+)(AdminPage);

@@ -1,5 +1,6 @@
 import app from 'firebase/app';
 import 'firebase/auth';
+import 'firebase/database';
 
 const config = {
     apiKey: process.env.REACT_APP_API_KEY,
@@ -17,9 +18,10 @@ class Firebase {
         app.initializeApp(config);
 
         this.auth = app.auth();
+        this.db = app.database();
     }
 
-    // * * * START AUTH API * * *
+    // * * * START AUTH API * * * //
     doCreateUserWithEmailAndPassword = (e, p) => 
         this.auth.createUserWithEmailAndPassword(e, p);
 
@@ -32,7 +34,41 @@ class Firebase {
 
     doPasswordUpdate = p =>
         this.auth.currentUser.updatePassword(p);
-    // * * * END AUTH API * * *
+    // * * * END AUTH API * * * //
+
+    // * * * START MERGE AUTH AND DB USER API * * * //
+    onAuthUserListener = (next, fallback) => 
+        this.auth.onAuthStateChanged(authUser => {
+            if(authUser){
+                this.user(authUser.uid)
+                .once('value')
+                .then(snapshot => {
+                    const dbUser = snapshot.val();
+
+                    // default empty roles
+                    if (!dbUser.roles) {
+                        dbUser.roles = {};
+                    }
+
+                    //merge auth and db user
+                    authUser = {
+                        uid: authUser.uid,
+                        email: authUser.email,
+                        ...dbUser
+                    };
+
+                    next(authUser);
+                })
+            } else {
+                fallback();
+            }
+        })
+    // * * * END MERGE AUTH AND DB USER API * * * //
+
+    // * * * START USER API * * * //
+    user = uid => this.db.ref(`users/${uid}`);
+    users = () => this.db.ref(`users`);
+    // * * * END USER API * * * //
 }
 
 export default Firebase;
