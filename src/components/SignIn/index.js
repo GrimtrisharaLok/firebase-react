@@ -11,6 +11,7 @@ const SignInPage = () => (
     <div>
         <h1>Sign In</h1>
         <SignInForm />
+        <SignInSocial />
         <PasswordForgetLink />
         <SignUpLink />
     </div>
@@ -78,11 +79,84 @@ class SignInFormBase extends Component {
     }
 }
 
+class SignInSocialBase extends Component {
+    constructor(props){
+        super(props);
+
+        this.state = { error: null };
+    }
+
+    onSubmit = e => {
+        e.preventDefault();
+    }
+
+    onClick = e => {
+        console.log(e.target.name);
+        if (e.target.name == 'google') {
+            this.props.firebase
+                .doSignInWithGoogle()
+                .then(socialAuthUser => {
+                    return this.props.firebase
+                        .user(socialAuthUser.user.uid)
+                        .set({
+                            username: socialAuthUser.user.displayName,
+                            email: socialAuthUser.user.email,
+                            roles: {}
+                        });
+                })
+                .then(() => {
+                    this.setState({ error: null });
+                    this.props.history.push(ROUTES.HOME);
+                })
+                .catch(error => {
+                    this.setState({ error });
+                });
+        } else if (e.target.name == 'twitter') {
+            this.props.firebase
+                .doSignInWithTwitter()
+                .then(socialAuthUser => {
+                    return this.props.firebase
+                        .user(socialAuthUser.user.uid)
+                        .set({
+                            username: socialAuthUser.additionalUserInfo.username,
+                            email: socialAuthUser.user.email,
+                            roles: {}
+                        });
+                })
+                .then(() => {
+                    this.setState({ error: null });
+                    this.props.history.push(ROUTES.HOME);
+                })
+                .catch(error => {
+                    this.setState({ error });
+                });
+        }
+    }
+
+    render() {
+        const { error } = this.state;
+
+        return (
+            <form onSubmit={this.onSubmit}>
+                <button name="google" onClick={this.onClick} type="button">Sign In with Google</button>
+                <button name="twitter" onClick={this.onClick} type="button">Sign In with Twitter</button>
+
+                {error && <p>{error.message}</p>}
+            </form>
+        )
+    }
+}
+
 const SignInForm = compose(
     withRouter,
     withFirebase
 )(SignInFormBase);
 
+const SignInSocial = compose(
+    withRouter,
+    withFirebase
+)(SignInSocialBase);
+
 export default SignInPage;
 
-export { SignInForm };
+export { SignInForm, SignInSocial };
