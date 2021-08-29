@@ -32,17 +32,15 @@ class MessagesBase extends Component {
     onListenForMessages() {
         this.setState({ loading: true });
 
-        this.props.firebase.messages().orderByChild('createdAt').limitToLast(this.state.limit).on('value', snapshot => {
-            const messageObject = snapshot.val();
+        this.unsubscribe = this.props.firebase.messages().orderBy('createdAt', 'desc').limit(this.state.limit).onSnapshot(snapshot => {
+            if(snapshot.size) {
+                let messages = [];
 
-            if (messageObject){
-                const messageList = Object.keys(messageObject).map(key => ({
-                    ...messageObject[key],
-                    uid: key
-                }));
-
+                snapshot.forEach(doc => {
+                    messages.push({ ...doc.data(), uid: doc.id});
+                })
                 this.setState({ 
-                    messages: messageList,
+                    messages: messages.reverse(),
                     loading: false
                 });
             } else {
@@ -56,14 +54,14 @@ class MessagesBase extends Component {
     }
 
     componentWillUnmount() {
-        this.props.firebase.messages().off();
+        this.unsubscribe();
     }
 
     onCreateMessage = (e, authUser) => {
-        this.props.firebase.messages().push({
+        this.props.firebase.messages().add({
             text: this.state.text,
             userId: authUser.uid,
-            createdAt: this.props.firebase.serverValue.TIMESTAMP
+            createdAt: this.props.firebase.fieldValue.serverTimestamp()
         });
 
         this.setState({ text: '' });
@@ -76,7 +74,7 @@ class MessagesBase extends Component {
     }
 
     onRemoveMessage = uid => {
-        this.props.firebase.message(uid).remove();
+        this.props.firebase.message(uid).delete();
     }
 
     onEditMessage = (message, text) => {
@@ -85,7 +83,7 @@ class MessagesBase extends Component {
         this.props.firebase.message(uid).set({
             ...messageSnapshot,
             text,
-            editedAt: this.props.firebase.serverValue.TIMESTAMP
+            editedAt: this.props.firebase.fieldValue.serverTimestamp()
         });
     }
     

@@ -111,6 +111,9 @@ class SignInSocialBase extends Component {
                                 username: socialAuthUser.additionalUserInfo.profile.name,
                                 email: socialAuthUser.additionalUserInfo.profile.email,
                                 roles: {}
+                            },
+                            {
+                                merge: true
                             });
                     } else return;
                 })

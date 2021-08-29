@@ -40,18 +40,18 @@ class UserItemBase extends Component {
         }
         this.setState({ loading: true });
 
-        this.props.firebase
+        this.unsubscribe = this.props.firebase
             .user(this.props.match.params.id)
-            .on('value', snapshot => {
+            .onSnapshot(snapshot => {
                 this.setState({
-                    user: snapshot.val(),
+                    user: snapshot.data(),
                     loading: false
                 });
             });
     }
 
     componentWillUnmount() {
-        this.props.firebase.user(this.props.match.params.id).off();
+        this.unsubscribe && this.unsubscribe();
     }
 
     render() {
@@ -101,23 +101,22 @@ class UserListBase extends Component {
     componentDidMount() {
         this.setState({ loading: true });
 
-        this.props.firebase.users().on('value', snapshot => {
-            const userObject = snapshot.val();
+        this.unsubscribe =  this.props.firebase.users().onSnapshot(snapshot => {
+            let users = [];
 
-            const userList = Object.keys(userObject).map(key => ({
-                ...userObject[key],
-                uid: key
-            }));
+            snapshot.forEach(doc => {
+                users.push({ ...doc.data(), uid: doc.id });
+            })
 
             this.setState({
-                users: userList,
+                users,
                 loading: false
             })
         })
     }
 
     componentWillUnmount() {
-        this.props.firebase.users().off();
+        this.unsubscribe();
     }
 
     render() {

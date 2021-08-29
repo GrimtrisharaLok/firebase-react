@@ -55,7 +55,7 @@ class SignUpFormBase extends Component {
                             username,
                             email,
                             roles
-                        });
+                        }, { merge: true });
                     })
             .then(() => {
                 return this.props.firebase.doSendEmailVerification();
